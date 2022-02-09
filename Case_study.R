@@ -200,8 +200,10 @@ F.f.tilde.A <- cbind(diag(K.f^2), matrix(0, K.f^2, K.f^2))
 # dim(F.f.tilde.A)
 
 ### KF with the specified V and W 
-V.f <- diag(0.01, length(data.rf.flp.lp[[1]]))
-W.f <- diag(0.01, 2*K.f^2)
+#V.f <- diag(0.01, length(data.rf.flp.lp[[1]]))
+#W.f <- diag(0.01, 2*K.f^2)
+V.f <- I1%*%V%*%I2
+W.f <- G.f%*%W
 m0.f = rnorm(2*K.f^2, 0, 1)
 C0.f = diag(0.1, 2*K.f^2)
 if (file.exists(here::here("data", "case", "fit.KF.f.RData"))){

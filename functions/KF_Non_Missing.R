@@ -36,3 +36,5 @@ KF_Non_Missing <- function(y, F, G, V, W, m0, C0){
   C.prd[[T+1]] <- G%*%C.flt[[t]]%*%t(G) + W
   return(list(m.flt=m.flt, m.prd=m.prd, C.flt=C.flt, C.prd=C.prd))
 }
+
+

@@ -10,7 +10,6 @@ s <- expand.grid(
 )
 dat <- matrix(Source(c(0.1, 0.0), NA, NA, NA, s), Nr, Nr)
 #range(dat)
-dev.off()
 image(dat)
 
 ## compute the spectral coefficients using my hand-writing Fourier transformation
@@ -37,38 +36,45 @@ coef <- Function_coef_FFT(dat, Omega, Nr)$rv
 
 ## recover the source image 
 # compute the Fourier bases F
-start_time <- Sys.time()
-source(here::here("functions", "Function_F.R"))
-F <- Function_F(Nr, N, Omega)
-#save(F, file = here::here("data", "N=100", "F.RData"))
+if (file.exists(here::here("data", "N=100", "F.RData"))){
+  load(here::here("data", "N=100", "F.RData"))
+} else{
+  start_time <- Sys.time()
+  source(here::here("functions", "Function_F.R"))
+  F <- Function_F(Nr, N, Omega)
+  save(F, file = here::here("data", "N=100", "F.RData"))
+  end_time <- Sys.time()
+  print(end_time - start_time)
+}
 dat_rc <- matrix(F%*%coef, Nr, Nr)
 image(dat_rc)
-range(dat_rc)
-end_time <- Sys.time()
-end_time - start_time
+#range(dat_rc)
 
-# compute the transition matrix
-source(here::here("functions", "G_nit.R"))
-for (i in c(1/Nr)) {
+## compute the transition matrix
+if (file.exists(here::here("data", "N=100", "G.step.0.01.RData"))){
+  load(here::here("data", "N=100", "G.step.0.01.RData"))
+} else{
+  source(here::here("functions", "G_nit.R"))
   start_time <- Sys.time()
-  v <- c(i, 0)
+  v <- c(0.01, 0)
   G <- G_nit(Omega, v)
   step <- 1
   G.step <- expm(step*G)
-  #save(G.step, file = here::here("data", "N=100", paste(c("G.step", as.character(i), "RData"), collapse=".")))
+  save(G.step, file = here::here("data", "N=100", "G.step.0.01.RData"))
   end_time <- Sys.time()
   print(end_time - start_time)
 }
 
-
-# visualization
+## visualization
 N.step <- 30
 alpha <- coef
-noise.y.tilde <- 0.005
-noise.coef <- 0.005
+noise.y.tilde <- 0.0049
+noise.coef <- 0.0049
+noise.source <- 0.0001
 y.sim <- list()
 y.sim[[1]] <- pmax(F%*%alpha,0) + F%*%rnorm(nrow(F), 0, noise.y.tilde)
 for (i in 2:N.step){
+  coef <- coef + rnorm(length(coef), 0, noise.source)
   alpha <- G.step%*%alpha + coef + rnorm(length(alpha), 0, noise.coef)
   y.sim[[i]] <- pmax(F%*%alpha,0) + F%*%rnorm(nrow(F), 0, noise.y.tilde)
 }
@@ -151,24 +157,28 @@ for (i in 1:N.step){
   image(tempt)
   Sys.sleep(0.3)
 }
-# K.f = 2K, this step needs around 10 mins  
-start_time <- Sys.time()
-y.tilde.flp <- list()
+# K.f = 2K
 N.f <- 20
 Omega.f <- Function_Omega(N.f)
-F.f <- Function_F(2*Nr, N.f, Omega.f)
+if (file.exists(here::here("data", "N=100", "F.f.20.RData"))){
+  load(here::here("data", "N=100", "F.f.20.RData"))
+} else {
+  start_time <- Sys.time()
+  F.f <- Function_F(2*Nr, N.f, Omega.f)
+  save(F.f, here::here("data", "N=100", "F.f.20.RData"))
+  end_time <- Sys.time()
+  print(end_time - start_time)
+}
+y.tilde.flp <- list()
 for (i in 1:N.step) {
   dat <-  matrix(y.f[[i]], 2*Nr, 2*Nr)
-  #coef.f <- Function_coef(dat, N.f, Omega.f) # FT needs 25 mins 
   coef.f <- Function_coef_FFT(dat, Omega.f, 2*Nr)$rv
   y.tilde.flp[[i]] <- coef.f
 }
-end_time <- Sys.time()
-end_time - start_time
 for (i in 1:N.step){
   tempt <- matrix(F.f%*%y.tilde.flp[[i]], 2*Nr, 2*Nr)
   image(tempt)
   Sys.sleep(0.3)
 }
 #save(y.tilde.flp, file = here::here("data", "N=100", "y.tilde.flp.RData"))
-#save(F.f, file = here::here("data", "N=100", "F.f.20.RData"))
+

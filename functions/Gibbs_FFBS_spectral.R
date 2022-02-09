@@ -5,37 +5,38 @@
 ###Required functions: KF_Non_Missing.R
 
 
-# library(expm)
-# library(MCMCpack)
-# library(Rfast)
-# 
-# rm(list = ls())
-# 
-# source(here::here("functions", "KF_Non_Missing.R"))
-# load(here::here("data", "N=100", "y.tilde.lp.RData"))
-# source(here::here("functions", "Function_Omega.R"))
-# source(here::here("functions", "G_nit.R"))
-# K = 10 
-# Omega <- Function_Omega(K)
-# v <- c(0.01, 0)
-# G <- G_nit(Omega,v)
-# step <- 1
-# G.step <- expm(step*G)
-# G.A <- rbind(
-#   cbind(G.step, diag(K^2)),
-#   cbind(matrix(0,K^2,K^2), diag(K^2))
-# )
-# F.tilde.A <- cbind(diag(K^2), matrix(0, K^2, K^2))
-# Nr = 100
-# F.name <- paste(c("F", "Nr", as.character(Nr), "K", as.character(K), "RData"), collapse = ".")
-# if (file.exists(here::here("data", "simulation", F.name))){
-#   load(here::here("data", "simulation", F.name))
-# } else{
-#   F <- Function_F(Nr, K, Omega) 
-#   save(F, file = here::here("data", "simulation", F.name))
-# }
-# F.A <- cbind(F, matrix(0, nrow(F), ncol(F)))
-# N.sample = 100
+library(expm)
+library(MCMCpack)
+library(Rfast)
+library(rasterImage)
+
+rm(list = ls())
+
+source(here::here("functions", "KF_Non_Missing.R"))
+load(here::here("data", "N=100", "y.tilde.lp.RData"))
+source(here::here("functions", "Function_Omega.R"))
+source(here::here("functions", "G_nit.R"))
+K = 10
+Omega <- Function_Omega(K)
+v <- c(0.01, 0)
+G <- G_nit(Omega,v)
+step <- 1
+G.step <- expm(step*G)
+G.A <- rbind(
+  cbind(G.step, diag(K^2)),
+  cbind(matrix(0,K^2,K^2), diag(K^2))
+)
+F.tilde.A <- cbind(diag(K^2), matrix(0, K^2, K^2))
+Nr = 100
+F.name <- paste(c("F", "Nr", as.character(Nr), "K", as.character(K), "RData"), collapse = ".")
+if (file.exists(here::here("data", "simulation", F.name))){
+  load(here::here("data", "simulation", F.name))
+} else{
+  F <- Function_F(Nr, K, Omega)
+  save(F, file = here::here("data", "simulation", F.name))
+}
+F.A <- cbind(F, matrix(0, nrow(F), ncol(F)))
+N.sample = 100
 
 Gibbs_FFBS_spectral <- function(N.sample, y.tilde.lp, G.A, F.tilde.A){
   T <- length(y.tilde.lp)
@@ -104,5 +105,12 @@ Gibbs_FFBS_spectral <- function(N.sample, y.tilde.lp, G.A, F.tilde.A){
   return(list(W=W, sigma2.v= sigma2.v))
 }
 
-# fit.test = Gibbs_FFBS_spectral(N.sample, y.tilde.lp, G.A, F.tilde.A)
-# plot(fit.test$sigma2.v)
+fit.test = Gibbs_FFBS_spectral(N.sample, y.tilde.lp, G.A, F.tilde.A)
+plot(fit.test$sigma2.v)
+for (i in 80:100){
+  W = mean()
+}
+rasterImage2(z = fit.test$W[[100]])
+range(fit.test$W[[20]])
+
+

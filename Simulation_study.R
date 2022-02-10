@@ -1,8 +1,11 @@
 library(expm)
 library(MASS)
+library(matrixcalc)
 
 rm(list = ls()) 
+#***********************************************************************************
 ### KF for the original low-pass data stream 
+#***********************************************************************************
 # load the simulated data stream 
 load(here::here("data", "N=100", "y.tilde.lp.RData"))
 # compute the transition matrix G.A and F.tilde.A
@@ -22,8 +25,13 @@ G.A <- rbind(
 F.tilde.A <- cbind(diag(K^2), matrix(0, K^2, K^2))
 ### KF with the specified V and W 
 source(here::here("functions", "KF_Non_Missing.R"))
-V <- diag(0.01, length(y.tilde.lp[[1]]))
-W <- diag(0.01, 2*K^2)
+V <- diag(0.0049, length(y.tilde.lp[[1]]))
+W1 <- diag(0.0049, K^2)
+W2 <- diag(0.0001, K^2)
+W <- rbind(
+  cbind(W1, matrix(0, nrow(W1), ncol(W1))),
+  cbind(matrix(0, nrow(W2), ncol(W2)), W2)
+)
 m0 = rnorm(2*K^2, 0, 1)
 C0 = diag(0.1, 2*K^2)
 start_time <- Sys.time()
@@ -58,8 +66,9 @@ for (i in 1:N.step){
   Sys.sleep(0.3)
 }
 
-
+#***********************************************************************************
 ### KF for the flipped low-pass data stream 
+#***********************************************************************************
 # load the simulated data stream 
 load(here::here("data", "N=100", "y.tilde.flp.RData"))
 # compite G*
@@ -94,9 +103,16 @@ G.f.A <- rbind(
 # compute F*
 F.f.tilde.A <- cbind(diag(K.f^2), matrix(0, K.f^2, K.f^2))
 ### KF with the specified V and W 
-V.f <- diag(0.01, length(y.tilde.flp[[1]]))
-dim(V.f)
-W.f <- diag(0.01, 2*K.f^2)
+#V.f <- G.f%*%diag(0.01, length(y.tilde.flp[[1]]))
+#W.f <- diag(0.0004, 2*K.f^2)
+V.f <- H%*%V%*%t(H)
+W1.f <- H%*%W1%*%t(H)
+W2.f <- H%*%W2%*%t(H)
+W.f <- rbind(
+  cbind(W1.f, matrix(0, nrow(W1.f), ncol(W1.f))),
+  cbind(matrix(0, nrow(W2.f), ncol(W2.f)), W2.f)
+)
+W.f <- as.matrix(nearPD(W.f)$mat)
 m0.f = rnorm(2*K.f^2, 0, 1)
 C0.f = diag(0.1, 2*K.f^2)
 if(file.exists(here::here("data", "simulation", "Fit.KF.f.RData"))){

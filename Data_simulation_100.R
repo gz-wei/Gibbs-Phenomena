@@ -68,9 +68,9 @@ if (file.exists(here::here("data", "N=100", "G.step.0.01.RData"))){
 ## visualization
 N.step <- 30
 alpha <- coef
-noise.y.tilde <- 0.0049
-noise.coef <- 0.0049
-noise.source <- 0.0001
+noise.y.tilde <- 0.005
+noise.coef <- 0.005
+noise.source <- 0.001
 y.sim <- list()
 y.sim[[1]] <- pmax(F%*%alpha,0) + F%*%rnorm(nrow(F), 0, noise.y.tilde)
 for (i in 2:N.step){
@@ -125,7 +125,7 @@ source(here::here("functions", "Function_coef.R"))
 source(here::here("functions", "ft.R"))
 source(here::here("functions", "Function_F.R"))
 y.tilde.lp <- list()
-N = 10
+N = 4
 Omega <- Function_Omega(N)
 F <- Function_F(Nr, N, Omega)
 for (i in 1:N.step) {
@@ -138,7 +138,7 @@ for (i in 1:N.step){
   image(tempt)
   Sys.sleep(0.3)
 }
-#save(y.tilde.lp, file = here::here("data", "N=100", "y.tilde.lp.RData"))
+save(y.tilde.lp, file = here::here("data", "N=100", "y.tilde.lp.RData"))
 
 
 ## low-pass filtering for the flipped data 

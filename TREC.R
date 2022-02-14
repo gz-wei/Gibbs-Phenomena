@@ -27,7 +27,7 @@ TREC <- function(Image1, Image2, WindowSize, overlap) {
     stop("WindowSize must be an odd number and greater than overlap")
   } else {
     gr.v.s = (WindowSize + 1)/2
-    gr.v.e = 
+    gr.v.e = 1
     
   }
 }

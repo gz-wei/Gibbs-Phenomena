@@ -69,8 +69,8 @@ if (file.exists(here::here("data", "N=100", "G.step.0.01.RData"))){
 N.step <- 30
 alpha <- coef
 noise.y.tilde <- 0.005
-noise.coef <- 0.01
-noise.source <- 0.005
+noise.coef <- 0.005
+noise.source <- 0.001
 y.sim <- list()
 y.sim[[1]] <- pmax(F%*%alpha,0) + F%*%rnorm(nrow(F), 0, noise.y.tilde)
 for (i in 2:N.step){
@@ -125,7 +125,7 @@ source(here::here("functions", "Function_coef.R"))
 source(here::here("functions", "ft.R"))
 source(here::here("functions", "Function_F.R"))
 y.tilde.lp <- list()
-N = 6
+N = 4
 Omega <- Function_Omega(N)
 F <- Function_F(Nr, N, Omega)
 for (i in 1:N.step) {

@@ -16,7 +16,7 @@ source(here::here("functions", "KF_Non_Missing.R"))
 load(here::here("data", "N=100", "y.tilde.lp.RData"))
 source(here::here("functions", "Function_Omega.R"))
 source(here::here("functions", "G_nit.R"))
-K = 4
+K = 10
 Omega <- Function_Omega(K)
 v <- c(0.01, 0)
 G <- G_nit(Omega,v)
@@ -150,16 +150,11 @@ Gibbs_FFBS_spectral <- function(N.sample, y.tilde.lp, G.A, F.tilde.A){
   return(list(sigma2.w1=sigma2.w1, sigma2.w2=sigma2.w2, sigma2.v=sigma2.v))
 }
 
-fit.test = Gibbs_FFBS_spectral(30000, y.tilde.lp, G.A, F.tilde.A)
-save(fit.test, file = here::here("data", "simulation", "MCMC.RData"))
-load(here::here("data", "simulation", "MCMC.RData"))
+fit.test = Gibbs_FFBS_spectral(2000, y.tilde.lp, G.A, F.tilde.A)
 plot(fit.test$sigma2.v)
 plot(fit.test$sigma2.w1)
 plot(fit.test$sigma2.w2)
-plot(fit.test$sigma2.v[25000:30000])
-plot(fit.test$sigma2.w1[25000:30000])
-plot(fit.test$sigma2.w2[25000:30000])
 
-fit.test$sigma2.v[30000]
-fit.test$sigma2.w1[30000]
-fit.test$sigma2.w2[30000]
+fit.test$sigma2.v[2000]
+fit.test$sigma2.w1[1000]
+fit.test$sigma2.w2[1000]

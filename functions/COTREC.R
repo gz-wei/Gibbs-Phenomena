@@ -26,7 +26,7 @@
 
 COTREC <- function(Image1, Image2, WindowSize, overlap, SearchSize) {
   n.x = nrow(Image1)
-  n.y = nrow(Image2)
+  n.y = ncol(Image1)
   # WindowSize = 17
   # overlap = 15
   # SearchSize = 4
@@ -99,19 +99,8 @@ COTREC <- function(Image1, Image2, WindowSize, overlap, SearchSize) {
   return(list(v.x = v.x, v.y = v.y, vs.x = vs.x, vs.y = vs.y))
 }
 
-# image(Image1)
-
-# test = data.frame(
-#   x = site$x,
-#   y = site$y, 
-#   z = c(Image1)
-# )
-# ggplot(test, aes(x=x,y=y,fill=z)) +
-#   geom_raster()
-
 
 # fit.test = COTREC(Image1, Image2, 17, 15, 4)
-# 
 # site = expand.grid(
 #   x = seq(0,1,length.out = nrow(Image1)),
 #   y = seq(0,1,length.out = ncol(Image1))

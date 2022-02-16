@@ -1,8 +1,8 @@
 library(rasterImage)
-library(SpatialVx) # for OF function
 library(tidyverse)
 library(expm)
 library(MASS)
+library(mgcv)
 
 
 rm(list = ls()) 
@@ -12,17 +12,17 @@ load(here::here("data", "case", "data.rf.RData"))
 T = length(data.rf)
 Nr <- 100
 s <- expand.grid(
-  x = seq(0, 1-1/Nr, length.out = Nr),
-  y = seq(0, 1-1/Nr, length.out = Nr)
+  x = seq(0, 1, length.out = Nr),
+  y = seq(0, 1, length.out = Nr)
 )
 for (t in 1:T){
   rasterImage2(
     z = data.rf[[t]], 
     zlim = c(0, 120),
-    x = seq(0, 1-1/Nr, length.out = Nr),
-    y = seq(0, 1-1/Nr, length.out = Nr)
+    x = seq(0, 1, length.out = Nr),
+    y = seq(0, 1, length.out = Nr)
   )
-  Sys.sleep(0.5)
+  Sys.sleep(0.6)
 }
 
 ### low-pass filtering for the original data with K=10
@@ -48,51 +48,58 @@ for (t in 1:T) {
   Sys.sleep(0.5)
 }
 
-### estimation of the velocity field uisng OF method (package issue)
-# data(hump)
-# initial <- hump$initial
-# final <- hump$final
-# look <- OF(final, xhat=initial, W=9, verbose=TRUE)
-# plot(look, full=TRUE)
-# Nr <- nrow(initial)
-# s <- expand.grid(
-#   x = seq(0, 1-1/Nr, length.out = Nr),
-#   y = seq(0, 1-1/Nr, length.out = Nr)
-# )
-# speed <- matrix(look$err.mag.lin, Nr, Nr)
-# angle <- matrix(look$err.ang.lin, Nr, Nr)
-# v <- data.frame(s, speed=c(speed), angle=c(angle/180*pi))
-# ggplot(v, aes(x, y, fill=speed,angle=angle,radius=scales::rescale(speed, c(0.01, 0.02)))) +
-#   geom_raster() +
-#   geom_spoke(arrow = arrow(length = unit(0.015, 'inches'))) +
-#   scale_fill_viridis_c(option = "plasma", limits = c(NA,NA)
-# )
-# if (file.exists(here::here("data", "case", "OF.v.RData"))){
-#   load(here::here("data", "case", "OF.v.RData"))
-# } else{
-#   OF.v <- list()
-#   for (i in 1:(T-1)){
-#     initial <- data.rf.lp[[i]]
-#     final <- data.rf.lp[[i+1]]
-#     OF.v[[i]] <- OF(final, xhat=initial, W=20, verbose = TRUE)
-#   }
-#   save(OF.v, file=here::here("data", "case", "OF.v.Rdata"))
-# } 
-# v <- list()
-# for (i in 1:(T-1)){
-#   speed <- matrix(OF.v[[i]]$err.mag.lin, Nr, Nr)
-#   angle <- matrix(OF.v[[i]]$err.ang.lin, Nr, Nr)
-#   v[[i]] <- data.frame(s, speed=c(speed), angle=c(angle/180*pi))
-# }
-# source(here::here("functions", "velocity.R"))
-# v.smt <- velocity(v, 3, 5)
-# v.smt.y <- v.smt$speed*sin(v.smt$angle)
-# v.smt.x <- v.smt$speed*cos(v.smt$angle)
-# ggplot(v.smt, aes(x, y, fill=speed,angle=angle,radius=scales::rescale(speed, c(0.005, 0.01)))) +
-#   geom_raster() +
-#   geom_spoke(arrow = arrow(length = unit(0.015, 'inches'))) +
-#   scale_fill_viridis_c(option = "plasma", limits = c(NA,NA)
-# )
+### estimate the wind field uing the radar images 
+## using my hand-coded COTREC function to track velocity field
+load(here::here("data", "case", "data.rd.RData"))
+if(file.exists(here::here("data", "case", "fit.v.RData"))){
+  load(here::here("data", "case", "fit.v.RData"))
+} else{
+  start_time <- Sys.time()
+  source(here::here("functions", "COTREC.R"))
+  fit.v = list()
+  for (i in 1:(length(data.rd)-1)){
+    fit.v[[i]] = COTREC(data.rd[[i]], data.rd[[i+1]], 5, 4, 4)
+  }
+  end_time <- Sys.time()
+  save(fit.v, file = here::here("data", "case", "fit.v.RData"))
+  print(end_time - start_time)
+}
+## smooth the velocity feild 
+tempt.vx = tempt.vy = matrix(0, Nr, Nr)
+for (i in 1:(length(data.rd)-1)){
+  tempt.vx = fit.v[[i]]$vs.x + c(tempt.vx)
+  tempt.vy = fit.v[[i]]$vs.y + c(tempt.vy)
+}
+vs.x = tempt.vx/(length(data.rd)-1)
+vs.y = tempt.vy/(length(data.rd)-1)
+site = expand.grid(
+  x = seq(0,1,length.out = nrow(data.rd[[1]])),
+  y = seq(0,1,length.out = ncol(data.rd[[1]]))
+)
+v.s = data.frame(
+  x = site$x,
+  y = site$y,
+  v.x = vs.x,
+  v.y = vs.y
+)
+#### plot the smoothed velocity field
+ggplot(v.s, aes(x = x, y = y, fill = v.x)) +
+  geom_segment(aes(xend = x+v.x, yend = y+v.y),
+               arrow = arrow(length = unit(0.05, "cm")), size = 0.15)
+#### plot the low-resolution velocity field
+every_n <- function(x, by = by) {
+  x <- sort(x)
+  x[seq(1, length(x), by = by)]
+}
+keepx <- every_n(unique(v.s$x), by = 6)
+keepy <- every_n(unique(v.s$y), by = 6)
+vsub <- filter(v.s, x %in% keepx  &  y %in% keepy)
+ggplot(vsub, aes(x = x, y = y)) +
+  geom_segment(aes(xend = x+v.x, yend = y+v.y),
+               arrow = arrow(length = unit(0.05, "cm")), size = 0.15)
+
+
+
 
 ### calculate the transition matrix 
 source(here::here("functions", "G_nit.R"))
@@ -105,9 +112,6 @@ G.A <- rbind(
   cbind(matrix(0,K^2,K^2), diag(K^2))
 )
 F.tilde.A <- cbind(diag(K^2), matrix(0, K^2, K^2))
-
-### estimate parameters 
-
 
 ### KF with the specified V and W 
 source(here::here("functions", "KF_Non_Missing.R"))

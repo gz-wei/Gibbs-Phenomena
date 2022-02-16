@@ -5,6 +5,7 @@
 library(RColorBrewer)
 #library(spacetime)
 library(selextR)
+library(tidyverse)
 #library(timeSeries)
 #library(fields)
 #library(MASS)
@@ -60,20 +61,21 @@ n.x = length(grd.x)
 n.y = length(grd.y)
 rasterImage2(
   z = matrix(radar.z,nrow=n.y)[, n.y:1],
-  zlim = c(0, 120), 
+  #zlim = c(0, 120), 
   x = grd.x,
   y = grd.y
 )
 
-# animation id = 10, 19, 22, 30, 34, 43, 71
-scan <- readRDS(here::here("data", "radar", "scan_list_23"))
+# animation id = 10, 19, 22, 30, 34, 43, 71, #318, 327, 334
+scan <- readRDS(here::here("data", "radar", "scan_list_34"))
 time.id <- seq(1, length(scan), 5)
 for (i in time.id){
   radar.z = scan[[i]]$data@data[,1]
   rainfall = (10^(radar.z/10)/200)^(5/8)
   rasterImage2(
+    # z = matrix(radar.z,nrow=n.y)[, n.y:1],
     z = matrix(rainfall,nrow=n.y)[, n.y:1],
-    zlim = c(0, 120), 
+    zlim = c(0, 120),
     x = grd.x,
     y = grd.y
   )
@@ -87,7 +89,8 @@ for (i in time.id){
   radar.z = scan[[i]]$data@data[,1]
   rainfall = (10^(radar.z/10)/200)^(5/8)
   rasterImage2(
-    z = matrix(rainfall,nrow=n.y)[, n.y:1][280:480, 220:420],
+    z = matrix(rainfall,nrow=n.y)[, n.y:1][281:380, 301:400],
+    #z = matrix(rainfall,nrow=n.y)[, n.y:1][281:380, 291:390],
     zlim = c(0, 120)
   )
   Sys.sleep(0.1)
@@ -95,12 +98,13 @@ for (i in time.id){
 
 ## save the selected dataset 
 data.rf <- list()
-time.select <- time.id[6:20]
+time.select <- time.id[8:20]
 for (i in 1:length(time.select)){
   scan.id = time.select[i]
   radar.z = scan[[scan.id]]$data@data[,1]
   rainfall = (10^(radar.z/10)/200)^(5/8)
-  tempt = matrix(rainfall,nrow=n.y)[, n.y:1][281:380, 321:420]
+  tempt = matrix(rainfall,nrow=n.y)[, n.y:1][281:380, 301:400]
+  #tempt = matrix(rainfall,nrow=n.y)[, n.y:1][281:380, 291:390]
   print(range(tempt))
   data.rf[[i]] <- tempt
   rasterImage2(
@@ -111,11 +115,17 @@ for (i in 1:length(time.select)){
 }
 save(data.rf, file = here::here("data", "case", "data.rf.RData"))
 
-
-
-
-
-
-
-
-
+data.rd <- list()
+time.select <- time.id[8:20]
+for (i in 1:length(time.select)){
+  scan.id = time.select[i]
+  radar.z = scan[[scan.id]]$data@data[,1]
+  tempt = matrix(radar.z,nrow=n.y)[, n.y:1][281:380, 301:400]
+  print(range(tempt))
+  data.rd[[i]] <- tempt
+  rasterImage2(
+    z = tempt
+  )
+  Sys.sleep(0.1)
+}
+save(data.rd, file = here::here("data", "case", "data.rd.RData"))

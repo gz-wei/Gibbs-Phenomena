@@ -156,15 +156,20 @@ G.A <- rbind(
 #*******************************************************************************************
 ### KF with estimated parameters for the original data stream
 #*******************************************************************************************
+if(file.exists(here::here("data", "case", "CSPE.RData"))){
+  load(here::here("data", "case", "CSPE.RData"))
+  V <- diag(kemfit$coef[1], length(data.rf.lp[[1]]))
+  W1 <- diag(kemfit$coef[2], K^2)
+  W2 <- diag(kemfit$coef[3], K^2)
+  W <- rbind(
+    cbind(W1, matrix(0, nrow(W1), ncol(W1))),
+    cbind(matrix(0, nrow(W2), ncol(W2)), W2)
+  )
+} else{
+    stop("run the CaseParameterEstimation.R file")
+  }
 source(here::here("functions", "KF_Non_Missing.R"))
 F.tilde.A <- cbind(diag(K^2), matrix(0, K^2, K^2))
-V <- diag(0.001, length(data.rf.lp[[1]]))
-W1 <- diag(0.0049, K^2)
-W2 <- diag(0.0001, K^2)
-W <- rbind(
-  cbind(W1, matrix(0, nrow(W1), ncol(W1))),
-  cbind(matrix(0, nrow(W2), ncol(W2)), W2)
-)
 m0 = rnorm(2*K^2, 0, 1)
 C0 = diag(0.1, 2*K^2)
 fit0.KF <- KF_Non_Missing(data.rf.lp, F.tilde.A, G.A, V, W, m0, C0)
@@ -180,9 +185,9 @@ for (i in 1:T){
   Sys.sleep(0.5)
 }
 ### test the physical meaning 
-image(matrix(F.A%*%fit0.KF$m.flt[[10]], Nr, Nr))
-image(matrix(F.A%*%G.A%*%fit0.KF$m.flt[[10]], Nr, Nr))
-image(matrix(F.A%*%fit0.KF$m.flt[[11]], Nr, Nr))
+rasterImage2(z = matrix(F.A%*%fit0.KF$m.flt[[10]], Nr, Nr))
+rasterImage2(z= matrix(F.A%*%G.A%*%fit0.KF$m.flt[[10]], Nr, Nr))
+rasterImage2(z = matrix(F.A%*%fit0.KF$m.flt[[11]], Nr, Nr))
 
 
 #*******************************************************************************************
@@ -301,7 +306,7 @@ if (file.exists(here::here("data", "case", "fit.f.KF.RData"))){
   fit.f.KF <- KF_Non_Missing(data.rf.flp.lp, F.f.tilde.A, G.f.A, V.f, W.f, m0.f, C0.f)
   end_time <- Sys.time()
   print(end_time - start_time)
-  save(fit.f.KF, file = here::here("data", "case", "fit.KF.f.RData"))
+  save(fit.f.KF, file = here::here("data", "case", "fit.f.KF.RData"))
 }
 ### plot the filtered data stream
 F.f.A <- cbind(F.f, matrix(0, nrow(F.f), ncol(F.f)))
@@ -311,6 +316,10 @@ for (i in 1:T){
   Sys.sleep(0.3)
 }
 ### test the physical meaning 
-image(matrix(F.f.A%*%fit.f.KF$m.flt[[10]], 2*Nr, 2*Nr)[1:Nr, 1:Nr])
-image(matrix(F.f.A%*%G.f.A%*%fit.f.KF$m.flt[[10]], 2*Nr, 2*Nr)[1:Nr, 1:Nr])
-image(matrix(F.f.A%*%fit.f.KF$m.flt[[11]], 2*Nr, 2*Nr)[1:Nr, 1:Nr])
+rasterImage2(z = matrix(F.f.A%*%fit.f.KF$m.flt[[10]], 2*Nr, 2*Nr)[1:Nr, 1:Nr])
+rasterImage2(z = matrix(F.f.A%*%G.f.A%*%fit.f.KF$m.flt[[10]], 2*Nr, 2*Nr)[1:Nr, 1:Nr])
+rasterImage2(z = matrix(F.f.A%*%fit.f.KF$m.flt[[11]], 2*Nr, 2*Nr)[1:Nr, 1:Nr])
+
+
+
+

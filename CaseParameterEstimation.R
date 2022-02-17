@@ -1,9 +1,9 @@
 library(MARSS)
 
 m(list = ls()) 
-#*************************************************************
+#**********************************************************************************
 ### plot the dataset
-#*************************************************************
+#**********************************************************************************
 load(here::here("data", "case", "data.rf.RData"))
 T = length(data.rf)
 Nr <- 100
@@ -21,9 +21,9 @@ for (t in 1:T){
   Sys.sleep(0.6)
 }
 
-#*************************************************************
+#**********************************************************************************
 ### estimate the wind field uing the radar images 
-#*************************************************************
+#**********************************************************************************
 ## track the velocity field using my hand-coded COTREC function 
 load(here::here("data", "case", "data.rd.RData"))
 if(file.exists(here::here("data", "case", "fit.v.RData"))){
@@ -73,13 +73,13 @@ ggplot(vsub, aes(x = x, y = y)) +
   geom_segment(aes(xend = x+v.x, yend = y+v.y),
                arrow = arrow(length = unit(0.05, "cm")), size = 0.15)
 
-#*************************************************************
+#*******************************************************************************************************
 ### low-pass filtering for the original data with K=6
-#*************************************************************
+#*******************************************************************************************************
 source(here::here("functions", "Function_Omega.R"))
 source(here::here("functions", "Function_coef_FFT.R"))
 source(here::here("functions", "Function_F.R"))
-K = 6
+K = 8
 Omega <- Function_Omega(K)
 F.name <- paste(c("F", "Nr", as.character(Nr), "K", as.character(K), "RData"), collapse = ".")
 if (file.exists(here::here("data", "case", F.name))){
@@ -101,9 +101,9 @@ for (t in 1:T) {
   Sys.sleep(0.5)
 }
 
-#*************************************************************
+#************************************************************************************
 ### calculate the transition matrix (K=6) in the dynamical mode
-#*************************************************************
+#************************************************************************************
 ### compute the diffusion parameters 
 vs.x = matrix(vs.x, Nr, Nr)
 vs.y = matrix(vs.y, Nr, Nr)
@@ -136,32 +136,41 @@ if(file.exists(here::here("data", "case", G.name))){
   end_time <- Sys.time()
   print(end_time-start_time)
 }
-
-
-
-
-source(here::here("functions", "KF_Non_Missing.R"))
-load(here::here("data", "N=100", "y.tilde.lp.RData"))
-source(here::here("functions", "Function_Omega.R"))
-source(here::here("functions", "Function_F.R"))
-source(here::here("functions", "G_nit.R"))
-K = 6
-Omega <- Function_Omega(K)
-v <- c(0.01, 0)
-G <- G_nit(Omega,v)
 step <- 1
 G.step <- expm(step*G)
 G.A <- rbind(
   cbind(G.step, diag(K^2)),
   cbind(matrix(0,K^2,K^2), diag(K^2))
 )
+
+
+#************************************************************************************
+### estimate the parameters using MARSS for the dynamical model 
+#************************************************************************************
 F.tilde.A <- cbind(diag(K^2), matrix(0, K^2, K^2))
-Nr = 100
-F.name <- paste(c("F", "Nr", as.character(Nr), "K", as.character(K), "RData"), collapse = ".")
-if (file.exists(here::here("data", "simulation", F.name))){
-  load(here::here("data", "simulation", F.name))
-} else{
-  F <- Function_F(Nr, K, Omega)
-  save(F, file = here::here("data", "simulation", F.name))
+x0 = as.matrix(rnorm(2*K^2, 0, 1))
+V0 = diag(0.1, 2*K^2)
+Q = matrix(list(0), nrow(G.A), nrow(G.A))
+diag(Q) = c(rep("s2w1", 1/2*nrow(G.A)), rep("s2w2", 1/2*nrow(G.A)))
+R = matrix(list(0), nrow(F.tilde.A), nrow(F.tilde.A))
+diag(R) = rep("s2v", nrow(F.tilde.A))
+Z = F.tilde.A
+B = G.A
+U = "zero"
+A ="zero"
+model.gen=list(Z=Z,R=R,B=B,Q=Q,x0=x0,V0=V0,U=U,A=A)
+dat <- matrix(0, length(data.rf.lp[[1]]), length(data.rf.lp))
+for (i in 1:length(data.rf.lp)){
+  dat[,i] <- data.rf.lp[[i]]
 }
-F.A <- cbind(F, matrix(0, nrow(F), ncol(F)))
+
+start_time = Sys.time()
+kemfit = MARSS(dat, model=model.gen, method = "BFGS")
+end_time = Sys.time()
+print(end_time - start_time)
+save(kemfit, file = here::here("data", "case", "CSPE.RData"))
+
+
+
+
+

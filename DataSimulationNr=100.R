@@ -125,7 +125,7 @@ source(here::here("functions", "Function_coef.R"))
 source(here::here("functions", "ft.R"))
 source(here::here("functions", "Function_F.R"))
 y.tilde.lp <- list()
-N = 6
+N = 8
 Omega <- Function_Omega(N)
 F <- Function_F(Nr, N, Omega)
 for (i in 1:N.step) {

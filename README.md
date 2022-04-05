@@ -1,1 +1,1 @@
-# Gibbs-Phenomena-Supression-in-PDE-Based-Spatial-Temporal-Models
+# Gibbs-Phenomena-Suppression-in-PDE-Based-Spatial-Temporal-Models

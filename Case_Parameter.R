@@ -1,6 +1,12 @@
 library(MARSS)
+library(rasterImage)
+library(tidyverse)
+library(matrixStats)
+library(fields)
 
-m(list = ls()) 
+
+
+rm(list = ls()) 
 #**********************************************************************************
 ### plot the dataset
 #**********************************************************************************
@@ -41,7 +47,7 @@ if(file.exists(here::here("data", "case", "fit.v.RData"))){
 }
 ## smooth the velocity feild 
 tempt.vx = tempt.vy = matrix(0, Nr, Nr)
-for (i in 1:(length(data.rd)-1)){
+for (i in 1:6){
   tempt.vx = fit.v[[i]]$vs.x + c(tempt.vx)
   tempt.vy = fit.v[[i]]$vs.y + c(tempt.vy)
 }
@@ -79,7 +85,7 @@ ggplot(vsub, aes(x = x, y = y)) +
 source(here::here("functions", "Function_Omega.R"))
 source(here::here("functions", "Function_coef_FFT.R"))
 source(here::here("functions", "Function_F.R"))
-K = 8
+K = 6
 Omega <- Function_Omega(K)
 F.name <- paste(c("F", "Nr", as.character(Nr), "K", as.character(K), "RData"), collapse = ".")
 if (file.exists(here::here("data", "case", F.name))){
@@ -92,14 +98,14 @@ if (file.exists(here::here("data", "case", F.name))){
   print(end_time - start_time)
 } 
 ### plot the low-pass data stream 
-data.rf.lp <- list()
-for (t in 1:T) {
-  coef <- Function_coef_FFT(data.rf[[t]], Omega, Nr)$rv
-  data.rf.lp[[t]] <- coef
-  tempt <- matrix(F%*%coef, Nr, Nr)
-  rasterImage2(z=tempt, zlim = c(0,60))
-  Sys.sleep(0.5)
-}
+# data.rf.lp <- list()
+# for (t in 1:T) {
+#   coef <- Function_coef_FFT(data.rf[[t]], Omega, Nr)$rv
+#   data.rf.lp[[t]] <- coef
+#   tempt <- matrix(F%*%coef, Nr, Nr)
+#   rasterImage2(z=tempt, zlim = c(0,60))
+#   Sys.sleep(0.5)
+# }
 
 #************************************************************************************
 ### calculate the transition matrix (K=6) in the dynamical mode
@@ -169,8 +175,3 @@ kemfit = MARSS(dat, model=model.gen, method = "BFGS")
 end_time = Sys.time()
 print(end_time - start_time)
 save(kemfit, file = here::here("data", "case", "CSPE.RData"))
-
-
-
-
-

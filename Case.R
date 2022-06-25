@@ -24,7 +24,8 @@ for (t in 1:T){
     z = data.rf[[t]], 
     zlim = c(0, 120),
     x = seq(0, 1, length.out = Nr),
-    y = seq(0, 1, length.out = Nr)
+    y = seq(0, 1, length.out = Nr),
+    main = paste(c("time", as.character(t)), collapse = " ")
   )
   Sys.sleep(0.6)
 }
@@ -53,12 +54,18 @@ for (t in 1:T) {
   coef <- Function_coef_FFT(data.rf[[t]], Omega, Nr)$rv
   data.rf.lp[[t]] <- coef
   tempt <- matrix(F%*%coef, Nr, Nr)
-  rasterImage2(z=tempt, zlim = c(0,60))
+  rasterImage2(
+    z = tempt, 
+    zlim = c(0,60), 
+    x = seq(0, 1, length.out = Nr),
+    y = seq(0, 1, length.out = Nr),
+    main = paste(c("time", as.character(t)), collapse = " ")
+  )
   Sys.sleep(0.5)
 }
 
 #*******************************************************************************************
-### estimate the wind field uing the radar images 
+### estimate the wind field using the radar images 
 #*******************************************************************************************
 ## track the velocity field using my hand-coded COTREC function 
 load(here::here("data", "case", "data.rd.RData"))
@@ -68,16 +75,19 @@ if(file.exists(here::here("data", "case", "fit.v.RData"))){
   start_time <- Sys.time()
   source(here::here("functions", "COTREC.R"))
   fit.v = list()
-  for (i in 1:(length(data.rd)-1)){
+  # for (i in 1:(length(data.rd)-1)){
+  #   fit.v[[i]] = COTREC(data.rd[[i]], data.rd[[i+1]], 5, 4, 4)
+  # }
+  for (i in 1:6){
     fit.v[[i]] = COTREC(data.rd[[i]], data.rd[[i+1]], 5, 4, 4)
   }
   save(fit.v, file = here::here("data", "case", "fit.v.RData"))
   end_time <- Sys.time()
   print(end_time - start_time)
 }
-## smooth the velocity feild 
+## smooth the velocity field 
 tempt.vx = tempt.vy = matrix(0, Nr, Nr)
-for (i in 1:(length(data.rd)-1)){
+for (i in 1:6){
   tempt.vx = fit.v[[i]]$vs.x + c(tempt.vx)
   tempt.vy = fit.v[[i]]$vs.y + c(tempt.vy)
 }
@@ -87,27 +97,32 @@ site = expand.grid(
   x = seq(0,1,length.out = nrow(data.rd[[1]])),
   y = seq(0,1,length.out = ncol(data.rd[[1]]))
 )
+speed = sqrt(vs.x^2 + vs.y^2)
 v.s = data.frame(
   x = site$x,
   y = site$y,
-  v.x = vs.x,
-  v.y = vs.y
+  v.x = vs.x*3,
+  v.y = vs.y*3,
+  speed = c(speed)
 )
+# range(v.s$speed)
 ## plot the smoothed velocity field
-ggplot(v.s, aes(x = x, y = y, fill = v.x)) +
-  geom_segment(aes(xend = x+v.x, yend = y+v.y),
-               arrow = arrow(length = unit(0.05, "cm")), size = 0.15)
+# ggplot(v.s, aes(x = x, y = y, fill = v.x)) +
+#   geom_segment(aes(xend = x+v.x, yend = y+v.y),
+#                arrow = arrow(length = unit(5, "cm")), size = 0.15)
 ## plot the low-resolution velocity field
 every_n <- function(x, by = by) {
   x <- sort(x)
   x[seq(1, length(x), by = by)]
 }
-keepx <- every_n(unique(v.s$x), by = 6)
-keepy <- every_n(unique(v.s$y), by = 6)
+keepx <- every_n(unique(v.s$x), by = 10)
+keepy <- every_n(unique(v.s$y), by = 10)
 vsub <- filter(v.s, x %in% keepx  &  y %in% keepy)
 ggplot(vsub, aes(x = x, y = y)) +
   geom_segment(aes(xend = x+v.x, yend = y+v.y),
-               arrow = arrow(length = unit(0.05, "cm")), size = 0.15)
+               arrow = arrow(length = unit(0.18, "cm")), size = 0.6) # +
+  #(type = "viridis") + 
+  # theme_paper 
 
 #*******************************************************************************************
 ### calculate the transition matrix in the dynamical mode 
@@ -140,7 +155,7 @@ if(file.exists(here::here("data", "case", G.name))){
   source(here::here("functions", "G_ad.R"))
   source(here::here("functions", "Phi.R"))
   v = data.frame(v.x = vs.x, v.y = vs.y)
-  G <- G_ad(1/Nr, v, K.ifm, Omega)
+  G <- G_ad(1/Nr, v, D.ifm, Omega)
   save(G, file = here::here("data", "case", G.name))
   end_time <- Sys.time()
   print(end_time-start_time)
@@ -166,8 +181,8 @@ if(file.exists(here::here("data", "case", "CSPE.RData"))){
     cbind(matrix(0, nrow(W2), ncol(W2)), W2)
   )
 } else{
-    stop("run the CaseParameterEstimation.R file")
-  }
+  stop("run the Case_Parameter.R file")
+}
 source(here::here("functions", "KF_Non_Missing.R"))
 F.tilde.A <- cbind(diag(K^2), matrix(0, K^2, K^2))
 m0 = rnorm(2*K^2, 0, 1)
@@ -180,14 +195,39 @@ for (i in 1:T){
   rasterImage2(
     z=tempt, zlim = c(0,60), 
     x = seq(0, 1, length.out = Nr),
-    y = seq(0, 1, length.out = Nr)
+    y = seq(0, 1, length.out = Nr),
+    main = paste(c("time", as.character(i)), collapse = " "),
+    cex.main = 2,
+    cex.axis = 1.5,
+    z.cex = 1.5,
+    xlab = NA,
+    ylab = NA
   )
   Sys.sleep(0.5)
 }
 ### test the physical meaning 
-rasterImage2(z = matrix(F.A%*%fit0.KF$m.flt[[10]], Nr, Nr))
-rasterImage2(z= matrix(F.A%*%G.A%*%fit0.KF$m.flt[[10]], Nr, Nr))
-rasterImage2(z = matrix(F.A%*%fit0.KF$m.flt[[11]], Nr, Nr))
+# rasterImage2(z = matrix(F.A%*%fit0.KF$m.flt[[10]], Nr, Nr))
+# rasterImage2(z= matrix(F.A%*%G.A%*%fit0.KF$m.flt[[13]], Nr, Nr))
+# rasterImage2(z = matrix(F.A%*%fit0.KF$m.flt[[7]], Nr, Nr))
+
+### plot the predicted data stream 
+for (k in 1:3) {
+  G_step <- expm(k*G)
+  G_full <- rbind(
+    cbind(G_step, diag(K^2)),
+    cbind(matrix(0,K^2,K^2), diag(K^2))
+  )
+  #tempt = matrix(F%*%G_step%*%fit0.KF$m.flt[[7]][1:100], Nr, Nr)
+  tempt = matrix(F.A%*%G_full%*%fit0.KF$m.flt[[7]], Nr, Nr)
+  rasterImage2(z=tempt, zlim = c(0,60),  main = paste(c("time", as.character(k+6)), collapse = " "),
+               x=seq(0,1,length.out = Nr),
+               y=seq(0,1,length.out = Nr),
+               cex.main = 2,
+               cex.axis = 1.5,
+               z.cex = 1.5,
+               xlab = NA,
+               ylab = NA)
+}  
 
 
 #*******************************************************************************************
@@ -234,7 +274,13 @@ for (t in 1:T){
     z = data.rf.flp[[t]], 
     zlim = c(0, 120),
     x = seq(0, 2, length.out = 2*Nr),
-    y = seq(0, 2, length.out = 2*Nr)
+    y = seq(0, 2, length.out = 2*Nr),
+    main = paste(c("time", as.character(t)), collapse = " "),
+    cex.main = 2,
+    cex.axis = 1.5,
+    z.cex = 1.5,
+    xlab = NA,
+    ylab = NA
   )
   Sys.sleep(0.5)
 }
@@ -312,14 +358,37 @@ if (file.exists(here::here("data", "case", "fit.f.KF.RData"))){
 F.f.A <- cbind(F.f, matrix(0, nrow(F.f), ncol(F.f)))
 for (i in 1:T){
   tempt <- matrix(F.f.A%*%fit.f.KF$m.flt[[i+1]], 2*Nr, 2*Nr)[1:Nr, 1:Nr]
-  rasterImage2(z=tempt, zlim = c(0,60))
+  rasterImage2(z=tempt, zlim = c(0,60),  main = paste(c("time", as.character(i)), collapse = " "),
+               x=seq(0, 1, length.out = Nr),
+               y=seq(0, 1, length.out = Nr),
+               cex.main = 2,
+               cex.axis = 1.5,
+               z.cex = 1.5,
+               xlab = NA,
+               ylab = NA
+  )
   Sys.sleep(0.3)
 }
 ### test the physical meaning 
-rasterImage2(z = matrix(F.f.A%*%fit.f.KF$m.flt[[10]], 2*Nr, 2*Nr)[1:Nr, 1:Nr])
-rasterImage2(z = matrix(F.f.A%*%G.f.A%*%fit.f.KF$m.flt[[10]], 2*Nr, 2*Nr)[1:Nr, 1:Nr])
-rasterImage2(z = matrix(F.f.A%*%fit.f.KF$m.flt[[11]], 2*Nr, 2*Nr)[1:Nr, 1:Nr])
+# rasterImage2(z = matrix(F.f.A%*%fit.f.KF$m.flt[[10]], 2*Nr, 2*Nr)[1:Nr, 1:Nr])
+# rasterImage2(z = matrix(F.f.A%*%G.f.A%*%fit.f.KF$m.flt[[10]], 2*Nr, 2*Nr)[1:Nr, 1:Nr])
+# rasterImage2(z = matrix(F.f.A%*%fit.f.KF$m.flt[[11]], 2*Nr, 2*Nr)[1:Nr, 1:Nr])
 
-
-
-
+### plot the predicted data stream 
+for (k in 1:2) {
+  G_step <- expm(k*G.f)
+  G_full <- rbind(
+    cbind(G_step, diag(K.f^2)),
+    cbind(matrix(0,K.f^2,K.f^2), diag(K.f^2))
+  )
+  #tempt = matrix(F.f%*%G_step%*%fit.f.KF$m.flt[[7]][1:400], 2*Nr, 2*Nr)[1:Nr, 1:Nr]
+  tempt = matrix(F.f.A%*%G_full%*%fit.f.KF$m.flt[[7]], 2*Nr, 2*Nr)[1:Nr, 1:Nr]
+  rasterImage2(z=tempt, zlim = c(0,60),  main = paste(c("time", as.character(k+6)), collapse = " "),
+               x=seq(0, 1, length.out = Nr),
+               y=seq(0, 1, length.out = Nr),
+               cex.main = 2,
+               cex.axis = 1.5,
+               z.cex = 1.5,
+               xlab = NA,
+               ylab = NA)
+}  

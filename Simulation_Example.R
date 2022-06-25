@@ -69,7 +69,7 @@ for (i in 1:N.step){
 K.f = 2*K
 y.tilde.flp.lp.name = paste(c("y.tilde.flp.lp", as.character(K.f), "RData"), collapse = ".")
 load(here::here("data", "data_simulation", y.tilde.flp.lp.name))
-# compite G*
+# compute G*
 source(here::here("functions", "Function_Omega.R"))
 source(here::here("functions", "Function_F.R"))
 source(here::here("functions", "G_nit.R"))

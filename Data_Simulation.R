@@ -1,7 +1,9 @@
 library(expm)
 rm(list = ls()) 
 
+#****************************************************************************************************
 ## simultate a source
+#****************************************************************************************************
 source(here::here("functions", "Source2.R"))
 Nr <- 100
 s <- expand.grid(
@@ -12,6 +14,10 @@ dat <- matrix(Source(c(0.1, 0.0), NA, NA, NA, s), Nr, Nr)
 #range(dat)
 image(dat)
 
+
+#****************************************************************************************************
+##compute the spectral coefficients
+#****************************************************************************************************
 ## compute the spectral coefficients using my hand-writing Fourier transformation
 # source(here::here("functions", "Function_Omega.R"))
 # source(here::here("functions", "Function_coef.R"))
@@ -34,15 +40,17 @@ coef <- Function_coef_FFT(dat, Omega, Nr)$rv
 #rasterImage2(z = Im(Function_coef_FFT(dat, Omega, Nr)$my.s))
 
 
+#****************************************************************************************************
 ## recover the source image 
+#****************************************************************************************************
 # compute the Fourier bases F
-if (file.exists(here::here("data", "N=100", "F.RData"))){
-  load(here::here("data", "N=100", "F.RData"))
+if (file.exists(here::here("data", "data_simulation", "F.RData"))){
+  load(here::here("data", "data_simulation", "F.RData"))
 } else{
   start_time <- Sys.time()
   source(here::here("functions", "Function_F.R"))
   F <- Function_F(Nr, N, Omega)
-  save(F, file = here::here("data", "N=100", "F.RData"))
+  save(F, file = here::here("data", "data_simulation", "F.RData"))
   end_time <- Sys.time()
   print(end_time - start_time)
 }
@@ -50,9 +58,11 @@ dat_rc <- matrix(F%*%coef, Nr, Nr)
 image(dat_rc)
 #range(dat_rc)
 
+#****************************************************************************************************
 ## compute the transition matrix
-if (file.exists(here::here("data", "N=100", "G.step.0.01.RData"))){
-  load(here::here("data", "N=100", "G.step.0.01.RData"))
+#****************************************************************************************************
+if (file.exists(here::here("data", "data_simulation", "G.step.0.01.RData"))){
+  load(here::here("data", "data_simulation", "G.step.0.01.RData"))
 } else{
   source(here::here("functions", "G_nit.R"))
   start_time <- Sys.time()
@@ -60,17 +70,19 @@ if (file.exists(here::here("data", "N=100", "G.step.0.01.RData"))){
   G <- G_nit(Omega, v)
   step <- 1
   G.step <- expm(step*G)
-  save(G.step, file = here::here("data", "N=100", "G.step.0.01.RData"))
+  save(G.step, file = here::here("data", "data_simulation", "G.step.0.01.RData"))
   end_time <- Sys.time()
   print(end_time - start_time)
 }
 
+#****************************************************************************************************
 ## visualization
+#****************************************************************************************************
 N.step <- 30
 alpha <- coef
 noise.y.tilde <- 0.005
-noise.coef <- 0.01
-noise.source <- 0.005
+noise.coef <- 0.005
+noise.source <- 0.001
 y.sim <- list()
 y.sim[[1]] <- pmax(F%*%alpha,0) + F%*%rnorm(nrow(F), 0, noise.y.tilde)
 for (i in 2:N.step){
@@ -84,7 +96,7 @@ for (i in 1:N.step){
   print(range(tempt))
   Sys.sleep(0.3)
 }
-save(y.sim, file = here::here("data", "N=100", "y.sim.RData"))
+save(y.sim, file = here::here("data", "data_simulation", "y.sim.RData"))
 
 ##### test the edge 
 # dat.test <- matrix(y.sim[[20]], Nr, Nr)
@@ -119,15 +131,26 @@ save(y.sim, file = here::here("data", "N=100", "y.sim.RData"))
 # image(dat.rc.f)
 # range(dat.rc.test)
 
-## low-pass filtering for the original data with N=10
+#****************************************************************************************************
+## low-pass filtering for the original data with K=10
+#****************************************************************************************************
 source(here::here("functions", "Function_Omega.R"))
 source(here::here("functions", "Function_coef.R"))
 source(here::here("functions", "ft.R"))
 source(here::here("functions", "Function_F.R"))
 y.tilde.lp <- list()
-N = 8
-Omega <- Function_Omega(N)
-F <- Function_F(Nr, N, Omega)
+K = 10
+Omega <- Function_Omega(K)
+F.name <- paste(c("F", "Nr", as.character(Nr), "K", as.character(K), "RData"), collapse = ".")
+if (file.exists(here::here("data", "data_simulation", F.name))){
+  load(here::here("data", "data_simulation", F.name))
+} else {
+  start_time <- Sys.time()
+  F <- Function_F(Nr, K, Omega)
+  save(F, file = here::here("data", "data_simulation", F.name))
+  end_time <- Sys.time()
+  print(end_time - start_time)
+}
 for (i in 1:N.step) {
   dat <-  matrix(y.sim[[i]], Nr, Nr)
   coef <- Function_coef_FFT(dat, Omega, Nr)$rv
@@ -138,7 +161,8 @@ for (i in 1:N.step){
   image(tempt)
   Sys.sleep(0.3)
 }
-save(y.tilde.lp, file = here::here("data", "N=100", "y.tilde.lp.RData"))
+y.tilde.lp.name = paste(c("y.tilde.lp", as.character(K), "RData"), collapse = ".")
+save(y.tilde.lp, file = here::here("data", "data_simulation", y.tilde.lp.name))
 
 
 ## low-pass filtering for the flipped data 
@@ -158,14 +182,15 @@ for (i in 1:N.step){
   Sys.sleep(0.3)
 }
 # K.f = 2K
-N.f <- 20
-Omega.f <- Function_Omega(N.f)
-if (file.exists(here::here("data", "N=100", "F.f.20.RData"))){
-  load(here::here("data", "N=100", "F.f.20.RData"))
+K.f <- 20
+Omega.f <- Function_Omega(K.f)
+F.f.name <- paste(c("F.f", "Nr", as.character(2*Nr), "K.f", as.character(2*K), "RData"), collapse = ".")
+if (file.exists(here::here("data", "data_simulation", F.f.name))){
+  load(here::here("data", "data_simulation", F.f.name))
 } else {
   start_time <- Sys.time()
-  F.f <- Function_F(2*Nr, N.f, Omega.f)
-  save(F.f, here::here("data", "N=100", "F.f.20.RData"))
+  F.f <- Function_F(2*Nr, K.f, Omega.f)
+  save(F.f, file = here::here("data", "data_simulation", F.f.name))
   end_time <- Sys.time()
   print(end_time - start_time)
 }
@@ -180,5 +205,6 @@ for (i in 1:N.step){
   image(tempt)
   Sys.sleep(0.3)
 }
-#save(y.tilde.flp, file = here::here("data", "N=100", "y.tilde.flp.RData"))
+y.tilde.flp.lp.name = paste(c("y.tilde.flp.lp", as.character(K.f), "RData"), collapse = ".")
+save(y.tilde.flp, file = here::here("data", "data_simulation", y.tilde.flp.lp.name))
 

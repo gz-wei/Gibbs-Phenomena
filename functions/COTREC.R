@@ -4,6 +4,7 @@
 # library(grid)
 # library(fields)
 # library(bnstruct)
+# library(wordspace)
 # 
 # rm(list = ls())
 # 
@@ -88,14 +89,31 @@ COTREC <- function(Image1, Image2, WindowSize, overlap, SearchSize) {
   v = data.frame(
     x = site$x,
     y = site$y,
+    z = rep(1, nrow(site)),
     v.x = c(v.x),
     v.y = c(v.y)
   )
-  fit.vx = gam(v.x ~ s(x)+s(y), data = v, method = "REML")
-  fit.vy = gam(v.y ~ s(x)+s(y), data = v, method = "REML")
-  site.pred = data.frame(x = site$x, y = site$y)
+  ### interpolation using GAM
+  fit.vx = gam(v.x ~ s(x)+s(y)+z, data = v, method = "REML")
+  fit.vy = gam(v.y ~ s(x)+s(y)+z, data = v, method = "REML")
+  site.pred = data.frame(x = site$x, y = site$y, z = rep(1, nrow(site)))
   vs.x = predict(fit.vx, newdata = site.pred)
   vs.y = predict(fit.vy, newdata = site.pred)
+  ### interpolation using my hand-coded nearest neighbor method
+  # na.id.x = which(is.na(v.x) == TRUE, arr.ind = TRUE)
+  # non_na.id.x = which(is.na(v.x) == FALSE, arr.ind = TRUE)
+  # for (i in 1:nrow(na.id.x)){
+  #   dist.id.x = rowNorms(na.id.x[1, ]- non_na.id.x, method = "euclidean", p = 2)
+  #   v.x[na.id.x[i,1], na.id.x[i,2]] = v.x[non_na.id.x[which.min(dist.id.x), 1], non_na.id.x[which.min(dist.id.x), 2]]
+  # 
+  # }
+  # na.id.y = which(is.na(v.y) == TRUE, arr.ind = TRUE)
+  # non_na.id.y = which(is.na(v.y) == FALSE, arr.ind = TRUE)
+  # for (i in 1:nrow(na.id.y)){
+  #   dist.id.y = rowNorms(na.id.y[1, ]- non_na.id.y, method = "euclidean", p = 2)
+  #   v.y[na.id.y[i,1], na.id.y[i,2]] = v.y[non_na.id.y[which.min(dist.id.y), 1], non_na.id.y[which.min(dist.id.y), 2]]
+  #   
+  # }
   return(list(v.x = v.x, v.y = v.y, vs.x = vs.x, vs.y = vs.y))
 }
 
@@ -119,6 +137,25 @@ COTREC <- function(Image1, Image2, WindowSize, overlap, SearchSize) {
 # keepy <- every_n(unique(v$y), by = 5)
 # vsub <- filter(v, x %in% keepx  &  y %in% keepy)
 # ggplot(vsub, aes(x = x, y = y, fill = v.x)) +
-#   geom_segment(aes(xend = x+v.x, yend = y+v.y), 
+#   geom_segment(aes(xend = x+v.x, yend = y+v.y),
 #                arrow = arrow(length = unit(0.05, "cm")), size = 0.15)
+
+
+# v = data.frame(
+#   x = site$x,
+#   y = site$y,
+#   v.x = c(vs.x),
+#   v.y = c(vs.y)
+# )
+# every_n <- function(x, by = by) {
+#   x <- sort(x)
+#   x[seq(1, length(x), by = by)]
+# }
+# keepx <- every_n(unique(v$x), by = 10)
+# keepy <- every_n(unique(v$y), by = 10)
+# vsub <- filter(v, x %in% keepx  &  y %in% keepy)
+# ggplot(vsub, aes(x = x, y = y, fill = v.x)) +
+#   geom_segment(aes(xend = x+v.x, yend = y+v.y),
+#                arrow = arrow(length = unit(0.05, "cm")), size = 0.15)
+
 

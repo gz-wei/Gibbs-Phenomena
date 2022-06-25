@@ -38,7 +38,7 @@ p = Polygon(xym)
 ps = Polygons(list(p),1)
 sps = SpatialPolygons(list(ps))
 plot(sps,add=TRUE,lwd=3,border="red")
-# dev.off()
+dev.off()
 
 ### sketch the plot
 colPalette <- adjustcolor(colorRampPalette(brewer.pal(n=9, 'YlOrRd'))(100), .85)
@@ -98,7 +98,8 @@ for (i in time.id){
 
 ## save the selected dataset 
 data.rf <- list()
-time.select <- time.id[8:20]
+#time.select <- time.id[8:20]
+time.select <- time.id[8:12]
 for (i in 1:length(time.select)){
   scan.id = time.select[i]
   radar.z = scan[[scan.id]]$data@data[,1]
@@ -109,14 +110,23 @@ for (i in 1:length(time.select)){
   data.rf[[i]] <- tempt
   rasterImage2(
     z = tempt, 
-    zlim = c(0, 120)
+    zlim = c(0, 120),
+    x = seq(0, 1, length.out = 100),
+    y = seq(0, 1, length.out = 100),
+    main = paste(c("time", as.character(i)), collapse = " "),
+    cex.main = 2,
+    cex.axis = 1.5,
+    z.cex = 1.5,
+    xlab = NA,
+    ylab = NA
   )
   Sys.sleep(0.1)
 }
-save(data.rf, file = here::here("data", "case", "data.rf.RData"))
+# save(data.rf, file = here::here("data", "case", "data.rf.RData"))
 
 data.rd <- list()
-time.select <- time.id[8:20]
+#time.select <- time.id[8:20]
+time.select <- time.id[8:12]
 for (i in 1:length(time.select)){
   scan.id = time.select[i]
   radar.z = scan[[scan.id]]$data@data[,1]
@@ -124,8 +134,19 @@ for (i in 1:length(time.select)){
   print(range(tempt))
   data.rd[[i]] <- tempt
   rasterImage2(
-    z = tempt
+    z = tempt,
+    x = seq(0, 1, length.out = 100),
+    y = seq(0, 1, length.out = 100),
+    main = paste(c("time", as.character(i)), collapse = " "),
+    cex.main = 2,
+    cex.axis = 1.5,
+    z.cex = 1.5,
+    xlab = NA,
+    ylab = NA
   )
   Sys.sleep(0.1)
 }
-save(data.rd, file = here::here("data", "case", "data.rd.RData"))
+# save(data.rd, file = here::here("data", "case", "data.rd.RData"))
+
+par( mfrow= c(2,5), mar = c(0.5, 0.5, 0.5, 0.5))
+
